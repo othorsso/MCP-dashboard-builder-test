@@ -9,55 +9,56 @@ This skill guides you through building a complete, production-ready React dashbo
 
 ## Phase 1 — Requirement Gathering (ALWAYS DO THIS FIRST)
 
-Before writing a single line of code, ask the user the following questions. Group them into one message. Do not proceed to Phase 2 until you have answers.
+Before writing a single line of code, collect requirements from the user using the `vscode_askQuestions` tool.
 
-### Questions to ask:
+**CRITICAL RULES for requirement gathering:**
+- Use `vscode_askQuestions` — this shows a structured question box in the UI, NOT a chat message
+- Ask **one question at a time** — a single `vscode_askQuestions` call with one question
+- Wait for the answer before asking the next question
+- Do NOT dump all questions into a single message or a single `vscode_askQuestions` call
+- Do NOT proceed to Phase 2 until all 10 questions are answered
 
-**1. Purpose & content**
-- What should this dashboard/app show? (e.g. sales data, warehouse exceptions, project status, HR metrics)
-- Who is the audience? (internal team, demo, customer-facing)
+### Question sequence (ask one by one):
 
-**2. Pages / views**
-- How many pages or views are needed?
-- List the views (e.g. "main dashboard", "detail view", "map view", "settings")
-- Should there be navigation between them?
+**Q1 — Purpose**
+> "What should this dashboard show? (e.g. sales data, project status, HR metrics, exceptions)"
+> Include options: Sales/revenue, Operations/logistics, HR/people, Project status, Other (freeform)
 
-**3. Charts and visualisations**
-- What charts or graphs are needed? (bar, pie/donut, line, area, horizontal bar)
-- What metric does each chart show?
+**Q2 — Audience**
+> "Who is the audience?"
+> Options: Internal team, Demo / prototype, Customer-facing
 
-**4. KPI tiles / summary cards**
-- What top-level numbers should be shown as cards? (e.g. Total, Critical count, Avg value)
-- Should KPI cards be clickable to filter the list below?
+**Q3 — Views / pages**
+> "How many views or pages are needed, and what should each show?"
+> Freeform. Example: "Main dashboard + detail side panel"
 
-**5. Tables / lists**
-- Is there a data table or sortable list?
-- What columns should it show?
-- Should rows be clickable to open a detail panel?
+**Q4 — Charts**
+> "What charts or graphs do you need?"
+> Multi-select options: Bar chart, Horizontal bar, Line/area chart, Donut/pie, None
 
-**6. Filters**
-- What filter controls are needed? (dropdowns, toggles, chips, search)
-- Should filters affect charts too, or just the table?
+**Q5 — KPI tiles**
+> "What top-level numbers should appear as summary cards at the top? Should they be clickable to filter the data below?"
+> Freeform. Example: "Total, Critical count, Avg value — yes clickable"
 
-**7. Data source**
-Choose one:
-- [ ] Fully static / hardcoded demo data
-- [ ] Mocked data that looks realistic but is generated in code
-- [ ] Data loaded from a local JSON file
-- [ ] Data fetched from an external API (provide URL + shape)
-- [ ] Data uploaded by the user at runtime
+**Q6 — Table / list**
+> "Do you need a data table or sortable list? If yes, what columns?"
+> Freeform. Example: "Yes — ID, Status, Priority, Date, Owner"
 
-**8. Styling**
-- Dark theme or light theme? (default: dark slate/navy)
-- Any brand colours to use?
-- Compact or spacious layout?
+**Q7 — Filters**
+> "What filter controls are needed?"
+> Multi-select options: Dropdown, Toggle/switch, Search box, Chip/tag filter, None
 
-**9. Deployment**
-- Local only, or deploy to Vercel?
-- If Vercel: do you already have a project/domain? If yes, what is the URL?
+**Q8 — Data source**
+> "Where does the data come from?"
+> Options: Fully hardcoded demo data, Realistic mock data generated in code, Local JSON file, External API (provide URL), User uploads at runtime
 
-**10. App name**
-- What should the app be called in the header?
+**Q9 — Styling**
+> "Dark or light theme? Any brand colours?"
+> Options: Dark (slate/navy — default), Light, Custom (freeform for colours)
+
+**Q10 — App name & deployment**
+> "What should the app be called, and should it be deployed to Vercel?"
+> Freeform. Example: "Sales Ops Dashboard — yes deploy to Vercel"
 
 ---
 
