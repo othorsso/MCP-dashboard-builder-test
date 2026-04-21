@@ -56,7 +56,13 @@ Before writing a single line of code, collect requirements from the user using t
 > "Dark or light theme? Any brand colours?"
 > Options: Dark (slate/navy — default), Light, Custom (freeform for colours)
 
-**Q10 — App name & deployment**
+**Q10 — MCP / external data connection**
+> "Do you want to connect this dashboard to a live data source via an MCP server?"
+> Options: Yes — I have an MCP server running (ask for URL), No — use realistic mock/demo data
+
+If yes: follow up with a single `vscode_askQuestions` call asking for the MCP server base URL.
+
+**Q11 — App name & deployment**
 > "What should the app be called, and should it be deployed to Vercel?"
 > Freeform. Example: "Sales Ops Dashboard — yes deploy to Vercel"
 
