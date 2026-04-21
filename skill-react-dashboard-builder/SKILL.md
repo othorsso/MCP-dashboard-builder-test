@@ -16,7 +16,7 @@ Before writing a single line of code, collect requirements from the user using t
 - Ask **one question at a time** — a single `vscode_askQuestions` call with one question
 - Wait for the answer before asking the next question
 - Do NOT dump all questions into a single message or a single `vscode_askQuestions` call
-- Do NOT proceed to Phase 2 until all 10 questions are answered
+- Do NOT proceed to Phase 2 until all 11 questions are answered
 
 ### Question sequence (ask one by one):
 
@@ -56,7 +56,13 @@ Before writing a single line of code, collect requirements from the user using t
 > "Dark or light theme? Any brand colours?"
 > Options: Dark (slate/navy — default), Light, Custom (freeform for colours)
 
-**Q10 — App name & deployment**
+**Q10 — MCP / live data connection**
+> "Do you want to connect this dashboard to a live data source via an MCP server?"
+> Options: Yes — I have an MCP server running (I'll provide the URL), No — use realistic mock/demo data
+
+If yes: immediately follow up with one more `vscode_askQuestions` call: "What is the base URL of your MCP server?"
+
+**Q11 — App name & deployment**
 > "What should the app be called, and should it be deployed to Vercel?"
 > Freeform. Example: "Sales Ops Dashboard — yes deploy to Vercel"
 
