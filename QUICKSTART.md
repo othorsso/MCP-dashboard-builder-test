@@ -1,13 +1,32 @@
-# 🚀 Quick Start Guide - Warehouse 24 3D Viewer
+# Quick Start
 
-## What You Have
+## 1. Install dependencies
 
-A real-time 3D visualization app for Warehouse 24 that:
-- ✅ Shows all warehouse locations in 3D
-- ✅ Updates live from D365 USMF
-- ✅ Works in any web browser
-- ✅ Shareable via single URL
-- ✅ No installation needed for viewers
+```bash
+npm install --legacy-peer-deps
+```
+
+## 2. Start the dev server
+
+```bash
+npm run dev
+```
+
+Open **http://localhost:5173** in your browser.
+
+## 3. Build for production
+
+```bash
+npm run build
+```
+
+## 4. Deploy to Vercel
+
+See [skill-react-dashboard-builder/DEPLOYMENT_QUICKREF.md](./skill-react-dashboard-builder/DEPLOYMENT_QUICKREF.md) for the full flow.
+
+## 5. Build your own dashboard
+
+Open [skill-react-dashboard-builder/SKILL.md](./skill-react-dashboard-builder/SKILL.md) and follow the step-by-step guide.
 
 ---
 
