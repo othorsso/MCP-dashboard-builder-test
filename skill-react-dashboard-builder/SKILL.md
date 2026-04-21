@@ -94,7 +94,7 @@ npm create vite@latest . -- --template react-ts
 npm install
 npm install tailwindcss@3 postcss autoprefixer
 npx tailwindcss init -p
-npm install zustand recharts lucide-react --legacy-peer-deps
+npm install zustand recharts lucide-react react-is --legacy-peer-deps
 ```
 
 ### 3b. Configure Tailwind
@@ -390,3 +390,4 @@ After deploying, do a **hard refresh** in the browser (`Ctrl+Shift+R`) to bypass
 5. **Vercel multiple aliases**: A project can have many aliases. Only the one you explicitly alias after deployment will reflect the new build.
 6. **Chart title spacing**: Use `mb-1` (not `mb-4`) between chart title and `<ResponsiveContainer>` to give charts more vertical space.
 7. **DataSourceBadge wrapping**: Always add `whitespace-nowrap` to inline badges in table cells to prevent two-line rendering.
+8. **`react-is` missing**: recharts requires `react-is` as a peer dependency. When using `--legacy-peer-deps`, it won't be auto-installed. Always install it explicitly: `npm install react-is --legacy-peer-deps`. Symptom: `Failed to resolve import "react-is" from recharts` error in Vite dev server.
