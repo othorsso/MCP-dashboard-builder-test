@@ -344,9 +344,9 @@ Vercel generates a unique URL for each deployment. You must alias it to your cus
 ```powershell
 npx vercel alias <deployment-url> <your-domain>.vercel.app
 ```
-Example:
+Example (replace with your own values from the deploy output):
 ```powershell
-npx vercel alias oscartestingwhsdata-ja6j57awn-othorssos-projects.vercel.app oscartestingwhsdata.vercel.app
+npx vercel alias my-app-abc123xyz-myusername.vercel.app my-app.vercel.app
 ```
 
 ### 8d. If the wrong project is linked
@@ -384,7 +384,7 @@ After deploying, do a **hard refresh** in the browser (`Ctrl+Shift+R`) to bypass
 
 1. **Three.js + React.lazy**: Even lazy-loading Three.js can crash the module system. If 3D is not essential, remove it entirely.
 2. **recharts Cell component**: In recharts 3.x, `<Cell>` as a functional component returns null but still works as a child of `<Pie>` or `<Bar>` via `findAllByType`. This is expected behaviour.
-3. **D365 deep links**: URL format is `https://{host}?cmp={company}&mi={FormMenuItemName}`. The `mi=` value is the AOT menu item name (not the form label).
+3. **External system deep links**: When linking out to another app (e.g. an ERP or CRM), verify the exact URL format including query params. Use a config constant for the base URL so it's easy to change.
 4. **Tailwind JIT**: Dynamically constructed class names (string interpolation) are not picked up by JIT. Define full class strings in lookup objects.
 5. **Vercel multiple aliases**: A project can have many aliases. Only the one you explicitly alias after deployment will reflect the new build.
 6. **Chart title spacing**: Use `mb-1` (not `mb-4`) between chart title and `<ResponsiveContainer>` to give charts more vertical space.
