@@ -1,0 +1,52 @@
+{
+  "name": "warehouse-agent",
+  "displayName": "Warehouse Agent",
+  "description": "AI chat agent for creating and managing warehouses in Dynamics 365 Finance & Operations",
+  "version": "0.0.1",
+  "publisher": "engage",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "AI"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "warehouse.agent",
+        "fullName": "Warehouse Agent",
+        "name": "warehouse",
+        "description": "Creates and manages warehouses in Dynamics 365 Finance & Operations via MCP",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "create",
+            "description": "Create a new warehouse in D365FO"
+          },
+          {
+            "name": "list",
+            "description": "List warehouses in a company"
+          },
+          {
+            "name": "find",
+            "description": "Find a specific warehouse by ID"
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.4.0"
+  }
+}

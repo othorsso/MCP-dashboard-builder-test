@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8f7f4;
+  --foreground: #1c2a1e;
+  --forest-50: #f0f7f0;
+  --forest-100: #d6ecd7;
+  --forest-500: #3a6b3e;
+  --forest-700: #2d5231;
+  --forest-900: #1c3220;
+  --water-400: #5b9abf;
+  --water-600: #2e7ca8;
+  --stone-warm: #8b7355;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  --background: #0f1a10;
+  --foreground: #e8f0e8;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans, 'Segoe UI', Arial, sans-serif);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Lightbox backdrop */
+.lightbox-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Image hover zoom */
+.photo-card img {
+  transition: transform 0.4s ease;
+}
+.photo-card:hover img {
+  transform: scale(1.04);
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrollbar hide — used by hero photo strip */
+.hero-strip-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hero-strip-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus ring — consistent keyboard navigation across all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--forest-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}

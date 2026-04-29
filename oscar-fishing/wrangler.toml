@@ -1,0 +1,14 @@
+name = "oscar-fishing"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+# Environment variables for production (set secrets via Cloudflare dashboard)
+# Do NOT put real values here – this file is committed to Git.
+# Set these in: Cloudflare Pages → Settings → Environment Variables
+#
+# [vars]
+# NEXT_PUBLIC_SUPABASE_URL = "https://your-project.supabase.co"
+# NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-anon-key"
+# NEXT_PUBLIC_SITE_URL = "https://oscar-fishing.pages.dev"
+# NEXT_PUBLIC_MEDIA_BASE_URL = ""   # leave empty until you set up R2

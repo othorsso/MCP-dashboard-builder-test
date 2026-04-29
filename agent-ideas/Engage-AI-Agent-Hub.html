@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Engage AI Agent Hub</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; }
+  body { background: #020617; color: #f1f5f9; min-height: 100vh; }
+
+  /* ── Layout ── */
+  header {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(2,6,23,0.92); border-bottom: 1px solid #1e293b;
+    backdrop-filter: blur(8px);
+  }
+  .header-inner {
+    max-width: 1280px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(79,70,229,0.35);
+  }
+  .logo svg { color: #fff; }
+  .header-title { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .header-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  main { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+  .section-gap { margin-top: 32px; }
+
+  /* ── KPI cards ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (min-width: 600px)  { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 900px)  { .kpi-grid { grid-template-columns: repeat(6, 1fr); } }
+
+  .kpi-card {
+    position: relative; text-align: left; border-radius: 12px; padding: 14px 16px;
+    border: 1px solid #1e293b; background: rgba(15,23,42,0.7);
+    cursor: pointer; transition: background 0.12s, border-color 0.12s;
+  }
+  .kpi-card:hover { background: rgba(30,41,59,0.6); }
+  .kpi-card.active { background: rgba(30,41,59,0.8); }
+  .kpi-dot {
+    position: absolute; top: 8px; right: 8px;
+    width: 8px; height: 8px; border-radius: 50%;
+    animation: pulse 2s infinite;
+    display: none;
+  }
+  .kpi-card.active .kpi-dot { display: block; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: .4; }
+  }
+  .kpi-label { font-size: 11px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-num { font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+
+  /* ── Charts ── */
+  .charts-grid {
+    display: grid; grid-template-columns: 1fr; gap: 20px;
+  }
+  @media (min-width: 900px) { .charts-grid { grid-template-columns: 1fr 1fr; } }
+
+  .chart-card {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 14px; padding: 20px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 2px; }
+  .chart-sub { font-size: 11px; color: #475569; margin-bottom: 14px; }
+  .chart-wrap { width: 100%; overflow: hidden; }
+
+  /* SVG bar chart rows */
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; cursor: pointer; }
+  .bar-label { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #1e293b; border-radius: 4px; height: 14px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: opacity 0.12s; }
+  .bar-row:hover .bar-fill { opacity: 0.75; }
+  .bar-val { font-size: 11px; color: #64748b; flex-shrink: 0; min-width: 16px; text-align: right; }
+
+  /* ── Filter bar ── */
+  .filter-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 400px; }
+  .search-wrap input {
+    width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+    padding: 9px 36px 9px 36px; font-size: 13px; color: #f1f5f9;
+    outline: none; transition: border-color 0.12s;
+  }
+  .search-wrap input:focus { border-color: #475569; }
+  .search-wrap input::placeholder { color: #475569; }
+  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #475569; pointer-events: none; }
+  .clear-search {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #475569; cursor: pointer; padding: 0;
+    display: none; line-height: 1;
+  }
+  .btn-reset {
+    display: flex; align-items: center; gap: 5px; padding: 9px 14px;
+    border-radius: 10px; border: 1px solid #334155; background: #0f172a;
+    color: #94a3b8; font-size: 12px; cursor: pointer; transition: color 0.12s, border-color 0.12s;
+    white-space: nowrap;
+  }
+  .btn-reset:hover { color: #f1f5f9; border-color: #475569; }
+
+  .chips-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 500;
+    border: 1px solid; cursor: pointer; transition: all 0.1s;
+    white-space: nowrap;
+  }
+  .chip .chip-count { opacity: 0.65; }
+
+  /* section label */
+  .section-label { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+  /* results meta */
+  .results-meta { font-size: 12px; color: #475569; margin-bottom: 14px; }
+  .results-meta strong { color: #94a3b8; }
+
+  /* ── Explorer layout ── */
+  .explorer { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  .explorer.panel-open { grid-template-columns: 1fr; }
+  @media (min-width: 1024px) {
+    .explorer.panel-open { grid-template-columns: 1fr 400px; }
+  }
+
+  /* ── Idea cards grid ── */
+  .cards-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 540px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) {
+    .cards-grid { grid-template-columns: repeat(3, 1fr); }
+    .explorer.panel-open .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── Idea card ── */
+  .idea-card {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 14px;
+    padding: 18px; cursor: pointer; text-align: left; width: 100%;
+    transition: background 0.12s, border-color 0.12s; display: flex; flex-direction: column;
+  }
+  .idea-card:hover { background: rgba(30,41,59,0.7); border-color: #334155; }
+  .idea-card.selected { background: rgba(30,41,59,0.9); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; align-items: center; border-radius: 7px;
+    padding: 3px 8px; font-size: 11px; font-weight: 500; border: 1px solid;
+    white-space: nowrap;
+  }
+  .card-id { font-size: 11px; color: #334155; font-family: monospace; flex-shrink: 0; }
+  .card-title { font-size: 14px; font-weight: 600; color: #fff; line-height: 1.35; margin-bottom: 7px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-desc { font-size: 12px; color: #64748b; line-height: 1.55; margin-bottom: 10px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .mini-section { margin-bottom: 8px; }
+  .mini-label { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+  .mini-text { font-size: 11px; color: #475569; font-style: italic; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mini-text.value { font-style: normal; color: #64748b;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .role-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .role-tag {
+    display: inline-flex; align-items: center; border-radius: 5px; padding: 2px 6px;
+    font-size: 10px; font-weight: 500; background: rgba(30,41,59,0.8);
+    color: #94a3b8; border: 1px solid #334155; white-space: nowrap;
+  }
+  .card-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid #1e293b; display: flex; align-items: center; gap: 5px; }
+  .card-footer span { font-size: 11px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Detail panel ── */
+  #detail-panel {
+    background: #0f172a; border-radius: 14px; border: 1px solid #1e293b;
+    overflow: hidden; display: none; flex-direction: column;
+  }
+  #detail-panel.visible { display: flex; }
+  .panel-header { padding: 18px 20px; border-bottom: 1px solid #1e293b; display: flex; gap: 12px; align-items: flex-start; }
+  .panel-header-main { flex: 1; min-width: 0; }
+  .panel-title { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.25; margin-top: 7px; }
+  .panel-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .panel-meta span { font-size: 11px; color: #475569; }
+  .panel-meta .dot { color: #334155; }
+  .btn-close {
+    flex-shrink: 0; padding: 6px; border-radius: 8px; background: none; border: none;
+    color: #475569; cursor: pointer; transition: color 0.1s, background 0.1s;
+  }
+  .btn-close:hover { color: #f1f5f9; background: #1e293b; }
+
+  .panel-body { padding: 18px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px; }
+  .panel-section { }
+  .panel-section-label { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px; }
+  .panel-section-text { font-size: 13px; color: #cbd5e1; line-height: 1.65; }
+  .panel-section-text.challenge { color: #94a3b8; font-style: italic; }
+  .panel-section-text.value-text { font-weight: 500; }
+  .panel-roles { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 60px 20px; }
+  .empty-state p { color: #475569; font-size: 13px; margin-top: 6px; }
+  .empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-link { color: #6366f1; background: none; border: none; cursor: pointer; font-size: 11px; text-decoration: underline; margin-top: 10px; display: inline-block; }
+
+  /* ── Utility ── */
+  svg { display: inline-block; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <svg width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">Engage AI Agent Hub</div>
+      <div class="header-sub">53 agentidéer inlämnade av Engage-teamet — bläddra, filtrera och hitta nästa bygge</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- CHARTS -->
+  <div class="charts-grid section-gap">
+    <div class="chart-card">
+      <div class="chart-title">Idéer per kategori</div>
+      <div class="chart-sub">Klicka på en rad för att filtrera</div>
+      <div class="chart-wrap" id="chart-categories"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Top bidragsgivare</div>
+      <div class="chart-sub">Antal inlämnade idéer per person / forum</div>
+      <div class="chart-wrap" id="chart-submitters"></div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="section-gap">
+    <div class="section-label">Filtrera idéer</div>
+    <div class="filter-wrap">
+      <div class="search-wrap">
+        <span class="search-icon">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </span>
+        <input type="text" id="search-input" placeholder="Sök titel, beskrivning, utmaning, inlämmare..." />
+        <button class="clear-search" id="clear-search" onclick="clearSearch()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <button class="btn-reset" id="btn-reset" onclick="clearAllFilters()" style="display:none">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        Rensa filter
+      </button>
+    </div>
+    <div class="chips-row" id="chips-row"></div>
+  </div>
+
+  <!-- EXPLORER -->
+  <div class="section-gap">
+    <div id="results-meta" class="results-meta"></div>
+    <div class="explorer" id="explorer">
+      <div>
+        <div class="cards-grid" id="cards-grid"></div>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <div class="empty-icon">🔍</div>
+          <strong style="color:#94a3b8; font-size:13px">Inga idéer hittades</strong>
+          <p>Prova att ändra söktermen eller filtren</p>
+          <button class="empty-link" onclick="clearAllFilters()">Rensa alla filter</button>
+        </div>
+      </div>
+      <div id="detail-panel">
+        <div class="panel-header">
+          <div class="panel-header-main" id="panel-header-main"></div>
+          <button class="btn-close" onclick="closePanel()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="panel-body" id="panel-body"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const IDEAS = [
+  { id:1, title:'Serviceorderagent', submitter:'Erik Toresson', description:'Förebyggande serviceagent som analyserar arbetsordrar, teknikeranteckningar, inspektioner m.m. av assets för att identifiera mönster som tyder på framtida fel (innan de uppstår).', userRoles:['Servicechef','Dispatcher','Service Manager'], challenge:'All information finns men är utspridd i ostrukturerad data (som ex. anteckningar), leder till reaktiva åtgärder.', businessValue:'Proaktivt underhåll. Sänker kostnader och ökar kundnöjdhet.', comments:'Funderar på hur vi inom AM kan göra förvaltningen mer proaktiv, datadriven och rådgivande, istället för reaktiv support.', category:'Service Management' },
+  { id:2, title:'Förvaltningsagent', submitter:'Helene Sahlsten', description:"Agent som sammanfattar driftläge, incidenthistorik, förbättringsförslag och föreslår 'roadmap'-punkter inför mer taktiska/strategiska möten med kunden.", userRoles:['Service Delivery Manager','SDM','TSA'], challenge:'Möten inom AM blir väldigt statusfokuserade och reaktiva — envägskommunikation. Att manuellt ta fram underlag är tidskrävande.', businessValue:'Mer strategiska dialoger. Tydlig koppling mellan AM och affärsnytta stärker oss som AM-partner långsiktigt.', category:'Application Management' },
+  { id:3, title:'Orderstatusagent', submitter:'Carola Sääski', description:'En agent som snabbt visar status för slutkundens orderrader utifrån statusen på relaterade intercompanyordrar.', userRoles:['Säljare','Sales Manager','Sales Representative'], challenge:'Det är många steg för att komma fram till vilken status en orderrad är i det relaterade bolaget.', businessValue:'Enkelhet att ge svar åt kunder, lättare att hitta avvikelser som behöver åtgärd.', category:'Sales' },
+  { id:4, title:'Säljprognosagent', submitter:'Fredrik Wahlgren', description:'Säljprognos per produkt utifrån tidigare års statistik extrapolerat, med hänsyn taget till storhelger, kampanjer etc. Input till inköp.', userRoles:['Planner','Kategoriansvarig','Planering','Inköp'], challenge:'Kan delvis utföras med Demand Planner-verktyget redan, men är fortfarande manuellt.', businessValue:'Högre servicegrad och lägre lagerbindning.', category:'SCM & Planning' },
+  { id:5, title:'Bankagent', submitter:'Fredrik Wahlgren', description:'Automatisk matchning av rader i bankavstämningsfil.', userRoles:['Finans','Finance Manager','Controller'], challenge:'Delvis manuell hantering idag.', businessValue:'Snabbare hantering i det dagliga arbetet.', category:'Finance' },
+  { id:6, title:'Integrationsagent', submitter:'Fredrik Wahlgren', description:'AI-förslag på mappning i integrationer mellan käll- och målsystem (AS-IS).', userRoles:['Utvecklare'], challenge:'Delvis manuell hantering idag.', businessValue:'Kortare ledtid att sätta upp nya integrationer.', category:'Development & Tech' },
+  { id:7, title:'Användaradministrationsagent', submitter:'Frida Milne', description:'Skapar nya användare i D365FO & Entra & tilldelar rätt licens i M365 Admin panel. Kan checka diskrepanser och meddela avvikelser.', userRoles:['Systemadministratör'], challenge:'Tidskrävande och ingen uppdatering när MS gör ändringar i license requirement — vissa roller kräver plötsligt en annan licens.', businessValue:'Bättre koll på licenshanteringen. Kan automatiskt disable:a användare i D365FO när folk slutar.', comments:'Vore smidigt att ha en koll mellan aktiva användare i D365FO och Entra.', category:'System Administration' },
+  { id:8, title:'Kundsupportagent', submitter:'Daniel Hallén', description:'Kundsupport-agent för effektiv hantering av lagerställen på försäljningsorder.', userRoles:['Kundtjänst'], challenge:'Kunder vill ibland ha samlad leverans och ibland snabb leverans. Mycket manuellt arbete att kolla saldo.', businessValue:'Agentstyrning för att få rätt lagerställen utifrån den aktuella kundens behov.', category:'Warehouse & Logistics' },
+  { id:9, title:'Leverantörsbevakningagent', submitter:'Daniel Hallén', description:'Tolkar ordererkännanden från leverantörer och uppdaterar inköpsorderrader automatiskt.', userRoles:['Inköp','Inköpsadministratör','Purchasing Manager'], challenge:'Hantering av ordererkännanden kräver att en PDF öppnas och orderrader uppdateras manuellt. Kan påverka försäljningsorders, transferorders och produktionsorders.', businessValue:'Tolka PDF:er och automatiskt uppdatera inköpsorders. Identifiera påverkade orders.', category:'SCM & Planning' },
+  { id:10, title:'Projektagent 1', submitter:'Mattias Rosendahl', description:'Project CoE-agent för projektmetodik och leveransstöd. Stödjer projektledaren längs hela projektlivscykeln — agendor, metodikfrågor och material från SharePoint/Teams.', userRoles:['Projektledare','Projektadministratör','Lösningsarkitekt'], challenge:'Kunskap och dokumentation finns men är utspridd. Tidskrävande att hitta rätt material — hjulet uppfinns på nytt, lärdomar glöms bort.', businessValue:'Sparar tid genom att direkt leverera agendor, mallar och dokumentation. Teamet arbetar mer enhetligt.', category:'Project Management' },
+  { id:11, title:'Config Compare Agent', submitter:'Hampus Tengwall', description:'Effektiviserar jämförande och flytt av konfiguration mellan miljöer och bolag. Säkerställer global konfig kontra golden config innan kopiering.', userRoles:['Migration Lead'], challenge:'Tidskrävande och enformig uppgift.', businessValue:'Mer tid till kvalitetssäkring och validering av data.', category:'Development & Tech' },
+  { id:12, title:'Skapa Bolag Agent', submitter:'Hampus Tengwall', description:'Skapar nytt bolag utifrån ett antal parametrar automatiskt.', userRoles:['Migration Lead'], challenge:'Idag är det en manuell process att skapa ett nytt bolag och kopiera basparametrar i golden config.', businessValue:'Processen kan effektiviseras, snabbas upp och bli mer korrekt.', category:'System Administration' },
+  { id:13, title:'Offertagent', submitter:'Hampus Tengwall', description:'Effektiviserar offertprocess och kortar ned tid från förfrågan till offert.', userRoles:['Säljare','Projektledare','Produktingenjör'], challenge:'Avancerad offereringsprocess med flertalet datakällor — dagspris på råvaror, timpriser för ingenjörer, ledtidsberäkningar.', businessValue:'Data kan hämtas in och sammanställas snabbare för att underlätta planering.', category:'Sales' },
+  { id:14, title:'Utbildningsagent', submitter:'Rickard Hilding-Lehtonen', description:'Utbildningsupport för dagligt arbete. Hjälper användare att förstå hur man utför processer man sällan använder.', userRoles:['Slutanvändare'], challenge:'Veta hur man ska göra processer när man är ny eller processer man sällan utför.', businessValue:'Användare som jobbar enligt uppsatta processer och enklare onboarding för nya anställda.', category:'HR & Training' },
+  { id:15, title:'Avstämningsagent 1', submitter:'Fredrik Strömberg', description:'Agent för löpande körning av reconciliation mellan General Ledger och Subledger.', userRoles:['Finance Controller'], challenge:'Reconciliation körs vanligen endast vid månadsbokslut — då är det bråttom att rätta fel.', businessValue:'Mycket stor nytta för en alltid pressad Finance-avdelning. Fel är redan framme vid bokslutet.', category:'Finance' },
+  { id:16, title:'Avstämningsagent 2', submitter:'Fredrik Strömberg', description:'Direkt kopplad till Avstämningsagent 1. En agent som "förbereder" inför reconciliation, flaggar upp betalningsjournaler m.m.', userRoles:['Finance Controller'], challenge:'Kräver att leverantörsfakturor som ligger för slutattest verkligen attesteras.', businessValue:'Vi jobbar Proaktivt istället för Reaktivt!', category:'Finance' },
+  { id:17, title:'Kopiera Miljöagent', submitter:'Ann-Charlotte Gillberg', description:'Agent för kopiering av produktionsmiljö till testmiljö med hantering av roller, konfig och master data.', userRoles:['Systemadministratör'], challenge:'Ofta tidskrävande och risk för fel.', businessValue:'Snabbare uppstart av produktionslik testmiljö för säkrare verifiering av lösning.', category:'System Administration' },
+  { id:18, title:'Processkartläggningsagent', submitter:'Ann-Charlotte Gillberg', description:'Processmappning/karta som output baserat på instruktioner eller steg i applikationen.', userRoles:['Applikationskonsult'], challenge:'Få en lagom detaljerad nivå på processkarta.', businessValue:'Visualiserad bild av en process som underlag för att hitta eventuella GAPs.', category:'Development & Tech' },
+  { id:19, title:'MRP Agent', submitter:'Christer Fjällner', description:'Svarar på frågor om planering (MRP). Exempel: Varför är försäljningsordern försenad? Varför kan inte produktionsordern starta?', userRoles:['Planerare','Säljare'], challenge:'Informationen finns i D365, men det är tidskrävande att tolka och ta rätt åtgärd.', businessValue:'Spara arbetstid och öka kvalitén på beslut.', category:'SCM & Planning' },
+  { id:20, title:'Pegging/Marking Agent', submitter:'Christer Fjällner', description:'Skapar grafisk presentation av Pegging/Marking i D365.', userRoles:['Planerare'], challenge:'Informationen finns i D365, men det är svårt att få en bra överblick.', businessValue:'Spara arbetstid och öka kvalitén på beslut.', category:'SCM & Planning' },
+  { id:21, title:'Projektagent 2', submitter:'Jimmy Vall', description:'Agent för modernisering av processer inom produktion, lager, logistik, försäljning och data (AX2012 → D365). Automatiserar matchning, klassificering och analys.', userRoles:['Processägare','SME','Produktionsplanerare','Lagerpersonal','BI-analytiker','Projektledning'], challenge:'Många manuella steg i produktion, lager och transport. Komplex matchning. Tunga Excel-simuleringar.', businessValue:'Automatisera matchning och klassificering. Optimera lagerflöden och upptäcka avvikelser i realtid.', category:'Project Management' },
+  { id:22, title:'Felsökningsagent', submitter:'Martin Hägg', description:'Felsökning inom D365 för AM/Governance. Hjälper användare att förstå tekniska eller otydliga felmeddelanden.', userRoles:['AM','Governance Team','First-/Secondline support'], challenge:'Tekniska felmeddelanden i FO kan vara svåra att felsöka och skickas till Second/Third line som blir en bottleneck.', businessValue:'Experter avlastas och snabbare turnaround på problem, mer självhjälp från endusers.', category:'Application Management' },
+  { id:23, title:'Testdataagent', submitter:'Martin Hägg', description:'Underhåller testdata i miljöer. Kopierar data och konfig från golden/PROD, säkrar kvalitet och att alla miljöer har bästa förutsättningar för test.', userRoles:['AM','Governance Team'], challenge:'Med växande databaser och dyrare lagring behöver vi minimera storleken på test- och utvecklingsmiljöer.', businessValue:'Bättre kvalitet på analys/design/test med låg underhållskostnad.', category:'Application Management' },
+  { id:24, title:'Config Compare Agent 2', submitter:'Martin Hägg', description:'Jämför konfiguration mellan miljöer. Kan även automatisera dokumentation av konfiguration.', userRoles:['AM','Governance','Projekt team'], challenge:'Med många miljöer och en golden config som ibland inte hålls uppdaterad från PROD kan det bli svårt.', businessValue:'Kvalitetssäkra konfig mellan miljöer. Minimera nedlagd tid för att hålla miljöer i synk.', category:'Development & Tech' },
+  { id:25, title:'Errorlogagent', submitter:'Helena Ahlbäck', description:'Sammanställer errorloggar från batchjobb och mejlar Sales takers. Strukturerar loggar till en användbar lista med Kundorder–problemtyp–Sales taker.', userRoles:['Säljare','Bolagsintern SME','Lageransvariga'], challenge:'WMSens Release to warehouse-jobb är känsliga för fel. Felloggarna i standard är bara rader i sekvens som kräver manuell tvättning i Excel.', businessValue:'Kunder får leveranser i tid. Avlastning för lageransvariga och SMEer.', category:'Warehouse & Logistics' },
+  { id:26, title:'Shipmentagent', submitter:'Helena Ahlbäck', description:'Signal till lagret när kundorder har fått flera shipments på samma dag. Hjälper lagerpersonal att konsolidera shipments rätt.', userRoles:['Lagerarbetare'], challenge:'Vid låga lagernivåer skapas flera shipments per order på samma dag — multipla fraktbokningar men kunden betalar bara en gång.', businessValue:'Sparar pengar från multipla frakter. Befriar lagerpersonalen från manuella kontroller. Kunden får en samlad leverans.', category:'Warehouse & Logistics' },
+  { id:27, title:'Prestandafelsökningsagent', submitter:'Oskar Zacharoff', description:'Agent för felsökning och prestanda-analys i Trace Parser.', userRoles:['Utvecklare','Teknisk Arkitekt'], challenge:'Det tar tid att hitta fel/prestandautmaningar i call stacken.', businessValue:'Agenten kan snabbt peka i rätt riktning utifrån en beskrivning av problemet.', category:'Development & Tech' },
+  { id:28, title:'Kundsupportagent 2', submitter:'Andreas Petersson', description:'Kundsupport-agent som kategoriserar supportärenden automatiskt.', userRoles:['Kundtjänst'], challenge:'Stor mängd supportcase varje dag — kundtjänst bryr sig inte om att kategorisera.', businessValue:'Rätt person kan bli tilldelad case, plus ordentlig statistik att utgå från.', category:'Customer Support' },
+  { id:29, title:'Knowledge Article Agent', submitter:'Andreas Petersson', description:'Föreslår svar till kund med utgångspunkt från Knowledge Articles.', userRoles:['Kundtjänst'], challenge:'Enklare frågor tar upp en stor del av arbetsdagen.', businessValue:'Färdigt svar att skicka efter en snabb check — frigör tid till svårare ärenden.', category:'Customer Support' },
+  { id:30, title:'Farligt Godsagent', submitter:'Andreas Petersson', description:'Tolkar vitt skilda utseenden på farligt gods-dokument (PDF, Word, Excel, mobilbild, handskrivet) och extraherar relevant data.', userRoles:['Kundtjänst'], challenge:'Enorma mängder farligt gods-dokument med alla möjliga format — ingen standard. Allt behöver skrivas av in i affärssystemet manuellt.', businessValue:'Spara enorm tid i att tolka och få in datan i affärssystemet.', category:'Customer Support' },
+  { id:31, title:'Skapa Produkt Agent', submitter:'Lars-Peter Westman', description:'Använd en agent för att skapa upp produkter istället för att hoppa manuellt mellan flera sidor i D365.', userRoles:['Product Manager'], challenge:'Att skapa en slutartikel manuellt kan ta 20–30 min — grunddata, costprice, BOM, route m.m.', businessValue:'Minimerar tid för att skapa en artikel.', category:'SCM & Planning' },
+  { id:32, title:'Kassa Konfigurator Agent', submitter:'John Hermander', description:'Skapar upp butiker och kassor utefter mallar och input grunddata (namn, adresser, butiksstorlek, antal kassor etc.).', userRoles:['Systemadministratör'], challenge:'Tidsåtgång samt risk för misstag vid manuell uppsättning.', businessValue:'Säkerställer rätt butiksuppsättning och tidsbesparing vid nyetablering.', category:'Retail' },
+  { id:33, title:'Retail Transaction Agent', submitter:'John Hermander', description:'Analyserar retail-transaktioner för att hitta potentiella misstag runt dagsavslut eller kassörer som möjligen fuskar.', userRoles:['Controlling','Butikschefer'], challenge:'Inget OOB-verktyg för att analysera misstänkt beteende från kassörer eller felsöka differenser vid dagsavslut.', businessValue:'Utbilda personal, hitta bedrägerier och förkorta felsökning vid dagsavslutsdifferenser.', category:'Retail' },
+  { id:34, title:'Lagertransaktionsagent', submitter:'John Hermander', description:'Analyserar specifika artiklar och transaktioner för ett warehouse för att förstå inventeringsdifferenser.', userRoles:['Controlling','Butikschefer','Inventeringsansvarig'], challenge:'Problem att få en bra översikt eller kolla manuellt på artiklar med många transaktioner.', businessValue:'Rätta till eller få bättre förklaringar till stora inventeringsdifferenser.', category:'Retail' },
+  { id:35, title:'Testagent', submitter:'SCM / Retail Forum', description:'Skapar testfall i Azure DevOps samt genomför regressionstester vid versionsuppdateringar och nya releaser.', userRoles:['Testare','Testlead'], challenge:'Tidskrävande och manuella processer.', businessValue:'Automatisera och effektivisera arbetet kopplat till test.', category:'Development & Tech' },
+  { id:36, title:'Datamappningsagent', submitter:'SCM / Retail Forum', description:'Föreslår mappningar mellan legacy ERP och Dynamics 365 F&O.', userRoles:['Datamigrerings Lead'], challenge:'Tidskrävande och manuella processer.', businessValue:'Automatisera och effektivisera arbetet kopplat till datamigrering.', category:'Development & Tech' },
+  { id:37, title:'Säkerhetslageragent', submitter:'SCM / Retail Forum', description:'Justerar kontinuerligt säkerhetslager efter säsong, kampanjer osv.', userRoles:['Planerare'], challenge:'Inkorrekta lagernivåer, onödigt kapital uppbundet, bristfälliga servicenivåer.', businessValue:'Ökad servicenivå, mindre kapital uppbundet i lager.', category:'SCM & Planning' },
+  { id:38, title:'Nummerserieagent', submitter:'Finansforum', description:'Skapar nummerserier på ett wizard-mässigt sätt med bättre utfall än standardwizard.', userRoles:['Systemadministratör','Applikationskonsult'], challenge:'Tidskrävande process, risk för avvikelse mot best-practices.', businessValue:'Enklare att återanvända en MS och Engage best-practice-mall.', category:'Finance' },
+  { id:39, title:'"Att göra"-Finansagent', submitter:'Finansforum', description:'En daglig kontroll av att alla delar av bokföringen sker som planerat — kundinbetalningar, leverantörsbetalningar och fakturaregistreringar.', userRoles:['Finance Controller','Kundreskontra','Levreskontra'], challenge:'Brist på interaktiva förslag på dagliga aktiviteter skapar risk för att viktiga arbetsuppgifter glöms bort.', businessValue:'Operational excellence.', category:'Finance' },
+  { id:40, title:'Ledger Settlement Agent', submitter:'Finansforum', description:'Ger smarta förslag på vad som kan settlas mot huvudboken.', userRoles:['Finance Controller'], challenge:'Tidskrävande, manuell process med risk för fel.', businessValue:'Operational excellence.', category:'Finance' },
+  { id:41, title:'Kundinbetalningsagent', submitter:'Finansforum', description:'Inläsning av kundinbetalningsfil där allt sker automatiskt och enbart undantag kvarstår.', userRoles:['Finance Controller','Kundreskontra'], challenge:'Tidskrävande, manuell process med risk för fel.', businessValue:'Operational excellence.', category:'Finance' },
+  { id:42, title:'Electronic Reporter Agent', submitter:'Finansforum', description:'Hjälper till att konfigurera och felsöka Electronic Reporter. Kan automatiskt ändra värden/formler i ER config utifrån text input.', userRoles:['Applikationskonsult'], challenge:'Manuell process som kräver en hel del tekniska färdigheter.', businessValue:'Ökar användarvänligheten och snabbheten att skapa nya ER-rapporter.', category:'Finance' },
+  { id:43, title:'Konfig Agent', submitter:'Finansforum', description:'Hjälper med att identifiera konfiguration som saknas kopplad till olika moduler och förmågor.', userRoles:['Applikationskonsult'], challenge:'Manuell och tidskrävande process. Risk att man missar viktig uppsättning.', businessValue:'Operational excellence.', category:'System Administration' },
+  { id:44, title:'Stänga Perioder Agent', submitter:'Finansforum', description:'Automatiserar stängningen av moduler i periodbokslut över flera legala enheter, enligt fastställt schema.', userRoles:['Finance Controller'], challenge:'Manuell och tidskrävande process. Risk att man missar viktig uppsättning.', businessValue:'Operational excellence.', category:'Finance' },
+  { id:45, title:'Financial Reporter Agent', submitter:'Finansforum', description:'Hjälper till att skapa kundanpassade Financial Reports.', userRoles:['Finance Controller'], challenge:'Manuell och tidskrävande process.', businessValue:'Operational excellence.', category:'Finance' },
+  { id:46, title:'Skapa Kontostruktur Agent', submitter:'Finansforum', description:'Skapar kontostruktur i D365 Finance. Man kan prata med en agent kring utformning av kontostruktur.', userRoles:['Finance Controller'], challenge:'Undvik manuell och tidskrävande uppsättning.', businessValue:'Användarvänlig process kring utformning av kontostruktur.', category:'Finance' },
+  { id:47, title:'Bank Reconciliation Agent', submitter:'Finansforum', description:'Laddar upp och hämtar banktransaktioner och bokför leverantörs- och kundbetalningsjournaler samt föreslår andra transaktioner.', userRoles:['Finance Controller'], challenge:'Manuell process.', businessValue:'Automatiserar och effektiviserar bankavstämningsprocessen.', category:'Finance' },
+  { id:48, title:'Licensoptimeringsagent', submitter:'Oscar Zeidler', description:'Agent som optimerar licenser ner på Duty/Privileges-nivå för nya säkerhetsroller.', userRoles:['Systemadministratör'], challenge:'Kund betalar mer för D365-licenser än nödvändigt. Stor del av funktionaliteten i befintliga roller nyttjas ej.', businessValue:'Lägre licenskostnader och mer relevanta säkerhetsroller som är enklare att förvalta.', category:'Security & Licensing' },
+  { id:49, title:'DevOps Agent', submitter:'Oscar Zeidler', description:'Agent för att ställa frågor och analysera Work Items i ett Azure DevOps-projekt.', userRoles:['Applikationskonsult','SME','Projektledare','Lösningsarkitekt'], challenge:'Tidskrävande att leta efter information i Azure DevOps.', businessValue:'Användarvänlig ansats till att söka och analysera information. Kan sammanställa status till projekt- och ledningsmöten.', category:'Development & Tech' },
+  { id:50, title:'Cash Flow Pulse Agent', submitter:'Oscar Zeidler', description:'Agent för visualisering av Net Cash Position med KPI:er som Total Inflows, Total Outflows, Open Receivables, Liquidity Forecast m.m.', userRoles:['Finance Controller'], challenge:'Avsaknad av standardrapporter och grafiskt tilltalande visualiseringar i standard D365 F&O.', businessValue:'Skapar bättre förutsättningar kring datadrivet beslutsfattande kopplat till Cash Flow.', category:'Finance' },
+  { id:51, title:'WMS Exception Agent', submitter:'Oscar Thorsson', description:'Agent som lyfter fram undantag som lagerpersonal behöver ta action på. KPI:er: Totalt antal avvikelser, Kritiska avvikelser, Shipment at Risk, Avg Aging, Blocked Work.', userRoles:['Lagerchef','Warehouse Manager'], challenge:'Avsaknad av standardrapporter och visualiseringar i standard D365 F&O gör det svårt att få överblick.', businessValue:'Bättre förutsättningar för att lagerpersonal skall kunna agera på avvikelser i tid och undvika driftstopp.', category:'Warehouse & Logistics' },
+  { id:52, title:'Batch Telemetry Agent', submitter:'Ajit Kumar Guttala', description:'Monitorerar och följer upp batchjobb samt avvikelser med hjälp av Azure App Insights och en Copilot Studio Agent.', userRoles:['Systemadministratör','AM'], challenge:'Befintliga vyer i LCS håller på att fasas ut — krav på nya verktyg för monitorering.', businessValue:'Överblick kring batchjobb och effektiv felsökning för att undvika driftstopp.', category:'System Administration' },
+  { id:53, title:'Copy Batch Job Agent', submitter:'Nurlin Aberra', description:'Agent som kopierar batchjobb mellan miljöer.', userRoles:['Systemadministratör'], challenge:'Tidskrävande aktivitet som riskerar att bli fel när man gör det manuellt.', businessValue:'Automatisering och tidsbesparing samt minskar risken för fel.', category:'System Administration' },
+];
+
+// ═══════════════════════════════════════════════
+// CATEGORY COLORS
+// ═══════════════════════════════════════════════
+const CAT = {
+  'Finance':               { color:'#10b981', bg:'rgba(16,185,129,0.12)', border:'rgba(16,185,129,0.3)', text:'#34d399' },
+  'Development & Tech':    { color:'#8b5cf6', bg:'rgba(139,92,246,0.12)', border:'rgba(139,92,246,0.3)', text:'#a78bfa' },
+  'SCM & Planning':        { color:'#3b82f6', bg:'rgba(59,130,246,0.12)', border:'rgba(59,130,246,0.3)', text:'#60a5fa' },
+  'System Administration': { color:'#f59e0b', bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.3)', text:'#fbbf24' },
+  'Warehouse & Logistics': { color:'#f97316', bg:'rgba(249,115,22,0.12)', border:'rgba(249,115,22,0.3)', text:'#fb923c' },
+  'Application Management':{ color:'#06b6d4', bg:'rgba(6,182,212,0.12)', border:'rgba(6,182,212,0.3)', text:'#22d3ee' },
+  'Customer Support':      { color:'#ec4899', bg:'rgba(236,72,153,0.12)', border:'rgba(236,72,153,0.3)', text:'#f472b6' },
+  'Sales':                 { color:'#f43f5e', bg:'rgba(244,63,94,0.12)', border:'rgba(244,63,94,0.3)', text:'#fb7185' },
+  'Project Management':    { color:'#6366f1', bg:'rgba(99,102,241,0.12)', border:'rgba(99,102,241,0.3)', text:'#818cf8' },
+  'Retail':                { color:'#eab308', bg:'rgba(234,179,8,0.12)', border:'rgba(234,179,8,0.3)', text:'#facc15' },
+  'HR & Training':         { color:'#14b8a6', bg:'rgba(20,184,166,0.12)', border:'rgba(20,184,166,0.3)', text:'#2dd4bf' },
+  'Service Management':    { color:'#84cc16', bg:'rgba(132,204,22,0.12)', border:'rgba(132,204,22,0.3)', text:'#a3e635' },
+  'Security & Licensing':  { color:'#ef4444', bg:'rgba(239,68,68,0.12)', border:'rgba(239,68,68,0.3)', text:'#f87171' },
+};
+
+const ALL_CATS = Object.keys(CAT);
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  search: '',
+  categories: [],   // active category filters
+  selectedId: null,
+};
+
+// ═══════════════════════════════════════════════
+// FILTERING
+// ═══════════════════════════════════════════════
+function filteredIdeas() {
+  let ideas = IDEAS;
+  if (state.categories.length > 0) {
+    ideas = ideas.filter(i => state.categories.includes(i.category));
+  }
+  const q = state.search.trim().toLowerCase();
+  if (q) {
+    ideas = ideas.filter(i =>
+      i.title.toLowerCase().includes(q) ||
+      i.description.toLowerCase().includes(q) ||
+      i.challenge.toLowerCase().includes(q) ||
+      i.businessValue.toLowerCase().includes(q) ||
+      i.submitter.toLowerCase().includes(q) ||
+      i.userRoles.some(r => r.toLowerCase().includes(q)) ||
+      (i.comments || '').toLowerCase().includes(q)
+    );
+  }
+  return ideas;
+}
+
+// ═══════════════════════════════════════════════
+// BADGE HTML
+// ═══════════════════════════════════════════════
+function badgeHtml(cat, small) {
+  const s = CAT[cat] || { bg:'rgba(100,116,139,0.2)', border:'rgba(100,116,139,0.3)', text:'#94a3b8' };
+  const pad = small ? 'padding:2px 7px;font-size:10px' : 'padding:3px 9px;font-size:11px';
+  return `<span class="badge" style="background:${s.bg};border-color:${s.border};color:${s.text};${pad}">${esc(cat)}</span>`;
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER KPI CARDS
+// ═══════════════════════════════════════════════
+const TOP_CATS = ['Finance','Development & Tech','SCM & Planning','System Administration','Warehouse & Logistics'];
+
+function renderKpi() {
+  const grid = document.getElementById('kpi-grid');
+  const allActive = state.categories.length === 0;
+  let html = `
+    <button class="kpi-card ${allActive ? 'active' : ''}" style="border-color:${allActive ? '#94a3b8' : '#1e293b'}" onclick="setAllFilter()">
+      <span class="kpi-dot" style="background:#94a3b8"></span>
+      <div class="kpi-label" style="color:#94a3b8">Alla idéer</div>
+      <div class="kpi-num">${IDEAS.length}</div>
+    </button>`;
+  TOP_CATS.forEach(cat => {
+    const s = CAT[cat];
+    const count = IDEAS.filter(i => i.category === cat).length;
+    const isActive = state.categories.length === 1 && state.categories[0] === cat;
+    html += `
+      <button class="kpi-card ${isActive ? 'active' : ''}" style="border-color:${isActive ? s.color : s.border}" onclick="toggleKpiCategory('${esc(cat)}')">
+        <span class="kpi-dot" style="background:${s.color}"></span>
+        <div class="kpi-label" style="color:${s.text}">${esc(cat)}</div>
+        <div class="kpi-num">${count}</div>
+      </button>`;
+  });
+  grid.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER CHARTS
+// ═══════════════════════════════════════════════
+function renderCharts() {
+  // Category chart
+  const catData = ALL_CATS
+    .map(cat => ({ name: cat, count: IDEAS.filter(i => i.category === cat).length, color: CAT[cat].color }))
+    .filter(d => d.count > 0)
+    .sort((a,b) => b.count - a.count);
+  const maxCat = catData[0].count;
+
+  let catHtml = '';
+  catData.forEach(d => {
+    const pct = Math.round((d.count / maxCat) * 100);
+    catHtml += `
+      <div class="bar-row" onclick="setChartCategoryFilter('${esc(d.name)}')" title="Filtrera: ${esc(d.name)}">
+        <div class="bar-label" style="width:160px;color:${d.color}">${esc(d.name)}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%;background:${d.color}"></div>
+        </div>
+        <div class="bar-val">${d.count}</div>
+      </div>`;
+  });
+  document.getElementById('chart-categories').innerHTML = catHtml;
+
+  // Submitters chart
+  const subMap = {};
+  IDEAS.forEach(i => { subMap[i.submitter] = (subMap[i.submitter] || 0) + 1; });
+  const subData = Object.entries(subMap).map(([name,count]) => ({ name, count }))
+    .sort((a,b) => b.count - a.count).slice(0, 10);
+  const maxSub = subData[0].count;
+
+  let subHtml = '';
+  subData.forEach(d => {
+    const pct = Math.round((d.count / maxSub) * 100);
+    subHtml += `
+      <div class="bar-row" style="cursor:default">
+        <div class="bar-label" style="width:160px">${esc(d.name)}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%;background:#6366f1"></div>
+        </div>
+        <div class="bar-val">${d.count}</div>
+      </div>`;
+  });
+  document.getElementById('chart-submitters').innerHTML = subHtml;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER CHIPS
+// ═══════════════════════════════════════════════
+function renderChips() {
+  const container = document.getElementById('chips-row');
+  const countMap = {};
+  IDEAS.forEach(i => { countMap[i.category] = (countMap[i.category] || 0) + 1; });
+
+  let html = '';
+  ALL_CATS.forEach(cat => {
+    const s = CAT[cat];
+    const isActive = state.categories.includes(cat);
+    const count = countMap[cat] || 0;
+    const style = isActive
+      ? `background:${s.bg};color:${s.text};border-color:${s.color}`
+      : `background:#0f172a;color:#64748b;border-color:#334155`;
+    html += `<button class="chip" style="${style}" onclick="toggleChip('${esc(cat)}')">${esc(cat)} <span class="chip-count">${count}</span></button>`;
+  });
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER CARDS
+// ═══════════════════════════════════════════════
+function renderCards() {
+  const ideas = filteredIdeas();
+  const grid = document.getElementById('cards-grid');
+  const empty = document.getElementById('empty-state');
+  const meta = document.getElementById('results-meta');
+
+  const total = IDEAS.length;
+  meta.innerHTML = ideas.length === total
+    ? `Visar <strong>${total}</strong> idéer`
+    : `Visar <strong>${ideas.length}</strong> av <strong>${total}</strong> idéer`;
+
+  if (ideas.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  let html = '';
+  ideas.forEach(idea => {
+    const s = CAT[idea.category] || {};
+    const isSelected = idea.id === state.selectedId;
+    const borderStyle = isSelected ? `border-color:${s.color || '#6366f1'}` : '';
+    const roles = idea.userRoles.slice(0, 3).map(r => `<span class="role-tag">${esc(r)}</span>`).join('');
+    const moreRoles = idea.userRoles.length > 3 ? `<span style="font-size:10px;color:#475569">+${idea.userRoles.length - 3}</span>` : '';
+    const isGroupSubmitter = idea.submitter.toLowerCase().includes('forum');
+    const submitterIcon = isGroupSubmitter
+      ? `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+      : `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+    html += `
+      <button class="idea-card ${isSelected ? 'selected' : ''}" style="${borderStyle}" onclick="selectIdea(${idea.id})">
+        <div class="card-top">
+          ${badgeHtml(idea.category, false)}
+          <span class="card-id">#${idea.id}</span>
+        </div>
+        <div class="card-title">${esc(idea.title)}</div>
+        <div class="card-desc">${esc(idea.description)}</div>
+        <div class="mini-section">
+          <div class="mini-label">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            Utmaning
+          </div>
+          <div class="mini-text">${esc(idea.challenge)}</div>
+        </div>
+        <div class="mini-section">
+          <div class="mini-label">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            Affärsnytta
+          </div>
+          <div class="mini-text value">${esc(idea.businessValue)}</div>
+        </div>
+        ${idea.userRoles.length > 0 ? `<div class="role-tags">${roles}${moreRoles}</div>` : ''}
+        <div class="card-footer" style="color:#475569">
+          ${submitterIcon}
+          <span>${esc(idea.submitter)}</span>
+        </div>
+      </button>`;
+  });
+  grid.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER DETAIL PANEL
+// ═══════════════════════════════════════════════
+function renderPanel() {
+  const panel = document.getElementById('detail-panel');
+  const explorer = document.getElementById('explorer');
+
+  if (!state.selectedId) {
+    panel.classList.remove('visible');
+    explorer.classList.remove('panel-open');
+    return;
+  }
+
+  const idea = IDEAS.find(i => i.id === state.selectedId);
+  if (!idea) return;
+
+  const s = CAT[idea.category] || {};
+  panel.style.borderColor = s.color || '#334155';
+
+  const isGroup = idea.submitter.toLowerCase().includes('forum');
+  const submitterIcon = isGroup
+    ? `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+    : `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+  document.getElementById('panel-header-main').innerHTML = `
+    ${badgeHtml(idea.category, true)}
+    <div class="panel-title">${esc(idea.title)}</div>
+    <div class="panel-meta">
+      <span style="color:#475569">${submitterIcon}</span>
+      <span>${esc(idea.submitter)}</span>
+      <span class="dot">·</span>
+      <span style="font-family:monospace;color:#334155">#${idea.id}</span>
+    </div>`;
+
+  const roles = idea.userRoles.map(r => `<span class="role-tag">${esc(r)}</span>`).join('');
+
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-section">
+      <div class="panel-section-label">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Beskrivning
+      </div>
+      <div class="panel-section-text">${esc(idea.description)}</div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-label">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        Utmaning
+      </div>
+      <div class="panel-section-text challenge">${esc(idea.challenge)}</div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-label">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Affärsnytta
+      </div>
+      <div class="panel-section-text value-text" style="color:${s.text || '#94a3b8'}">${esc(idea.businessValue)}</div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-label">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Användarroll
+      </div>
+      <div class="panel-roles">${roles}</div>
+    </div>
+    ${idea.comments ? `
+    <div class="panel-section">
+      <div class="panel-section-label">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Kommentarer
+      </div>
+      <div class="panel-section-text" style="color:#94a3b8">${esc(idea.comments)}</div>
+    </div>` : ''}`;
+
+  panel.classList.add('visible');
+  explorer.classList.add('panel-open');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER RESET BUTTON
+// ═══════════════════════════════════════════════
+function updateResetButton() {
+  const hasFilters = state.search.trim() || state.categories.length > 0;
+  document.getElementById('btn-reset').style.display = hasFilters ? 'flex' : 'none';
+  document.getElementById('clear-search').style.display = state.search ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+// FULL RENDER
+// ═══════════════════════════════════════════════
+function render() {
+  renderKpi();
+  renderChips();
+  renderCards();
+  renderPanel();
+  updateResetButton();
+}
+
+// ═══════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════
+function setAllFilter() {
+  state.categories = [];
+  state.selectedId = null;
+  render();
+}
+
+function toggleKpiCategory(cat) {
+  const isOnly = state.categories.length === 1 && state.categories[0] === cat;
+  state.categories = isOnly ? [] : [cat];
+  state.selectedId = null;
+  render();
+}
+
+function setChartCategoryFilter(cat) {
+  const isOnly = state.categories.length === 1 && state.categories[0] === cat;
+  state.categories = isOnly ? [] : [cat];
+  state.selectedId = null;
+  render();
+}
+
+function toggleChip(cat) {
+  if (state.categories.includes(cat)) {
+    state.categories = state.categories.filter(c => c !== cat);
+  } else {
+    state.categories = [...state.categories, cat];
+  }
+  state.selectedId = null;
+  render();
+}
+
+function selectIdea(id) {
+  state.selectedId = state.selectedId === id ? null : id;
+  render();
+  // Scroll panel into view on mobile
+  if (state.selectedId) {
+    setTimeout(() => {
+      const panel = document.getElementById('detail-panel');
+      if (panel && window.innerWidth < 1024) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  }
+}
+
+function closePanel() {
+  state.selectedId = null;
+  render();
+}
+
+function clearSearch() {
+  state.search = '';
+  document.getElementById('search-input').value = '';
+  render();
+}
+
+function clearAllFilters() {
+  state.search = '';
+  state.categories = [];
+  state.selectedId = null;
+  document.getElementById('search-input').value = '';
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// SEARCH INPUT
+// ═══════════════════════════════════════════════
+document.getElementById('search-input').addEventListener('input', function() {
+  state.search = this.value;
+  render();
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+renderCharts();
+render();
+</script>
+</body>
+</html>

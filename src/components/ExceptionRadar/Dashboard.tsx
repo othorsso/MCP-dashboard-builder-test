@@ -2,6 +2,7 @@
 // Warehouse Exception Radar — Main Dashboard
 // ============================================================
 
+import { useState, useEffect } from 'react';
 import { useExceptionStore, KPI_FILTER_LABELS } from '../../store/exceptionStore';
 import { KpiCards } from './KpiCards';
 import { FilterBar } from './FilterBar';
@@ -10,21 +11,36 @@ import { ExceptionDetailPanel } from './ExceptionDetailPanel';
 import { ExceptionCharts } from './ExceptionCharts';
 import { AiBriefing } from './AiBriefing';
 import { Radar, RefreshCw, X } from 'lucide-react';
-import { MCP_SNAPSHOT_DATE, MCP_COMPANY, MCP_ENVIRONMENT } from '../../data/d365LiveData';
+import { MCP_COMPANY, MCP_ENVIRONMENT } from '../../data/d365LiveData';
 
 interface Props {
   onSwitchToLocationLoad?: () => void;
 }
 
 export function ExceptionRadarDashboard({ onSwitchToLocationLoad }: Props) {
-  const { metrics, exceptions, selectedExceptionId, kpiFilter, setKpiFilter, filteredExceptions } = useExceptionStore();
+  const {
+    metrics, exceptions, selectedExceptionId, kpiFilter, setKpiFilter, filteredExceptions,
+    isRefreshing, refreshStep, lastRefreshed, refreshSnapshot,
+  } = useExceptionStore();
   const m = metrics();
   const allExceptions = exceptions;
   const visibleCount = filteredExceptions().length;
 
+  const [showUpdated, setShowUpdated] = useState(false);
+  useEffect(() => {
+    if (lastRefreshed) {
+      setShowUpdated(true);
+      const t = setTimeout(() => setShowUpdated(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [lastRefreshed]);
+
   const _now = new Date();
-  const _snap = new Date(_now);
-  _snap.setHours(_snap.getHours() - 2, 0, 0, 0);
+  const _snap = lastRefreshed ?? (() => {
+    const d = new Date(_now);
+    d.setHours(d.getHours() - 2, 0, 0, 0);
+    return d;
+  })();
   const snapshotLabel = _snap.toLocaleString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
@@ -43,7 +59,7 @@ export function ExceptionRadarDashboard({ onSwitchToLocationLoad }: Props) {
               Oscar's WMS Exceptions Dashboard
             </h1>
             <p className="text-[10px] text-slate-500 leading-none mt-0.5">
-              {MCP_COMPANY} · WH24 &amp; WH51 · Snapshot {snapshotLabel}
+              {MCP_COMPANY} · WH24 &amp; WH51 · {lastRefreshed ? 'Live' : 'Snapshot'} {snapshotLabel}
             </p>
           </div>
         </div>
@@ -69,10 +85,18 @@ export function ExceptionRadarDashboard({ onSwitchToLocationLoad }: Props) {
 
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs text-slate-400 hover:text-white hover:border-slate-500 transition-all"
+            disabled={isRefreshing}
+            onClick={() => refreshSnapshot()}
+            className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs transition-all ${
+              showUpdated
+                ? 'border-green-600/60 bg-green-900/30 text-green-300'
+                : isRefreshing
+                ? 'border-slate-700 bg-slate-800/60 text-slate-500 cursor-wait'
+                : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:text-white hover:border-slate-500'
+            }`}
           >
-            <RefreshCw size={12} />
-            Refresh
+            <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+            {showUpdated ? 'Updated ✓' : isRefreshing ? 'Refreshing…' : 'Refresh'}
           </button>
 
           {onSwitchToLocationLoad && (
@@ -86,6 +110,19 @@ export function ExceptionRadarDashboard({ onSwitchToLocationLoad }: Props) {
           )}
         </div>
       </header>
+
+      {/* ── Refresh Progress Banner ── */}
+      {isRefreshing && (
+        <div className="flex items-center gap-3 px-5 py-2.5 text-xs border-b bg-indigo-950/30 border-indigo-800/20 text-indigo-300">
+          <RefreshCw size={11} className="animate-spin shrink-0 text-indigo-400" />
+          <span>{refreshStep}</span>
+          <span className="ml-auto flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:150ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:300ms]" />
+          </span>
+        </div>
+      )}
 
       {/* ── Scrollable Content ── */}
       <main className="flex-1 overflow-y-auto px-4 py-5 space-y-4 lg:px-6">

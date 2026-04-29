@@ -15,16 +15,21 @@
 
 import type { WarehouseException } from '../types/exceptions';
 import { OPEN_WORK_HEADERS, ON_HAND_INVENTORY, MCP_SNAPSHOT_DATE } from './d365LiveData';
+import type { D365WorkHeader, D365OnHand } from './d365LiveData';
 
-function hoursAgo(date: Date): number {
-  return Math.max(0, Math.floor((MCP_SNAPSHOT_DATE.getTime() - date.getTime()) / (1000 * 60 * 60)));
-}
+export function deriveExceptions(
+  workHeaders: D365WorkHeader[] = OPEN_WORK_HEADERS,
+  onHand: D365OnHand[] = ON_HAND_INVENTORY,
+  snapshotDate: Date = MCP_SNAPSHOT_DATE,
+): WarehouseException[] {
+  function hoursAgo(date: Date): number {
+    return Math.max(0, Math.floor((snapshotDate.getTime() - date.getTime()) / (1000 * 60 * 60)));
+  }
 
-function item(warehouseId: '24' | '51', itemNumber: string) {
-  return ON_HAND_INVENTORY.find(i => i.itemNumber === itemNumber && i.warehouseId === warehouseId)!;
-}
+  function item(warehouseId: '24' | '51', itemNumber: string) {
+    return onHand.find(i => i.itemNumber === itemNumber && i.warehouseId === warehouseId)!;
+  }
 
-export function deriveExceptions(): WarehouseException[] {
   const exceptions: WarehouseException[] = [];
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -174,10 +179,10 @@ export function deriveExceptions(): WarehouseException[] {
 
   // ── EX-006 ── WH24 Six Unstarted Purchase Putaway Lines ─────────────────
   // Source: WarehouseWorkHeaders — 6 × Open Purch type, all ProcessingStart=1900
-  const purchWorkIds = OPEN_WORK_HEADERS
+  const purchWorkIds = workHeaders
     .filter(w => w.warehouseId === '24' && w.type === 'Purch')
     .map(w => w.workId);
-  const purchOrders = [...new Set(OPEN_WORK_HEADERS
+  const purchOrders = [...new Set(workHeaders
     .filter(w => w.warehouseId === '24' && w.type === 'Purch')
     .map(w => w.orderNumber)
   )];
@@ -409,5 +414,195 @@ export function deriveExceptions(): WarehouseException[] {
     tags: ['device', 'RF', 'scan_error', 'production_floor'],
   });
 
+  // ════════════════════════════════════════════════════════════════════════
+  // DYNAMICALLY DERIVED FROM CURRENT WORK HEADER SNAPSHOT
+  // ════════════════════════════════════════════════════════════════════════
+
+  // ── EX-014 ── WH24 Sales Pick Backlog Surge ────────────────────────────
+  // Source: WarehouseWorkHeaders — all Open Sales work in WH24, none started
+  const wh24SalesPicks = workHeaders.filter(
+    w => w.warehouseId === '24' && w.type === 'Sales' && !w.processingStarted
+  );
+  const wh24SalesShipments = [...new Set(wh24SalesPicks.map(w => w.shipmentId).filter(Boolean))];
+  if (wh24SalesPicks.length > 2) {
+    exceptions.push({
+      id: 'EX-014',
+      title: `Sales pick backlog SURGE — ${wh24SalesPicks.length} unstarted picks, ${wh24SalesShipments.length} shipments at risk (WH24)`,
+      description:
+        `${wh24SalesPicks.length} open sales pick work orders in WH24 have never started processing. ` +
+        `${wh24SalesShipments.length} unique shipments are implicated. This is a significant increase from the previous snapshot.`,
+      severity: 'critical',
+      warehouseId: '24',
+      processArea: 'outbound',
+      category: 'stale_work',
+      agingHours: hoursAgo(new Date('2026-04-20T00:00:00Z')),
+      impact:
+        `${wh24SalesShipments.length} customer shipments are blocked. Multiple loads cannot be manifested. ` +
+        'SLA breach risk across all pending orders if picks are not started immediately.',
+      likelyCause:
+        'New waves released but no pickers assigned — possibly due to staffing shortfall or wave processing error. ' +
+        'Backlog has accumulated across multiple waves.',
+      suggestedAction:
+        `Immediately assign pickers to the ${wh24SalesPicks.length} open sales pick orders. ` +
+        'Prioritise the oldest waves (USMF-000000002, USMF-000000086, USMF-000000111). ' +
+        'Check load manifesting windows for all impacted shipments.',
+      dataSource: 'real',
+      dataNote:
+        `D365FO WarehouseWorkHeaders: ${wh24SalesPicks.length} open Sales-type work orders in WH24, ` +
+        'all WarehouseWorkProcessingStartDateTime=1900-01-01 (never started). ' +
+        `Work IDs: ${wh24SalesPicks.slice(0, 5).map(w => w.workId).join(', ')}…`,
+      createdAt: new Date('2026-04-20T00:00:00Z'),
+      status: 'open',
+      tags: ['sales', 'outbound', 'backlog', 'multiple_shipments', 'SLA_risk'],
+    });
+  }
+
+  // ── EX-015 ── WH51 Production Pick Backlog ─────────────────────────────
+  // Source: WarehouseWorkHeaders — multiple Open ProdPick in WH51, none started
+  const wh51ProdPicks = workHeaders.filter(
+    w => w.warehouseId === '51' && w.type === 'ProdPick' && !w.processingStarted
+  );
+  const wh51ProdOrders = [...new Set(wh51ProdPicks.map(w => w.orderNumber).filter(Boolean))];
+  if (wh51ProdPicks.length > 1) {
+    exceptions.push({
+      id: 'EX-015',
+      title: `Production component pick backlog — ${wh51ProdPicks.length} unstarted picks, ${wh51ProdOrders.length} production orders (WH51)`,
+      description:
+        `${wh51ProdPicks.length} open production component pick work orders in WH51 are unstarted across ${wh51ProdOrders.length} production orders ` +
+        `(${wh51ProdOrders.join(', ')}). Production line starvation risk is high.`,
+      severity: 'high',
+      warehouseId: '51',
+      processArea: 'production',
+      category: 'stale_work',
+      agingHours: hoursAgo(new Date('2026-04-21T06:00:00Z')),
+      impact:
+        `${wh51ProdOrders.length} production orders are waiting for component supply. ` +
+        'Line starvation probable within the current shift if not actioned.',
+      likelyCause:
+        'Workers not assigned to production pick waves. Multiple production orders competing for the same WH51 pick resources.',
+      suggestedAction:
+        `Assign workers to all ${wh51ProdPicks.length} production pick orders in WH51 immediately. ` +
+        'Prioritise by production order due date. Review component availability before each pick.',
+      dataSource: 'real',
+      dataNote:
+        `D365FO WarehouseWorkHeaders: ${wh51ProdPicks.length} open ProdPick-type work orders in WH51, ` +
+        `all ProcessingStartDateTime=1900-01-01. Work IDs: ${wh51ProdPicks.map(w => w.workId).join(', ')}`,
+      createdAt: new Date('2026-04-21T06:00:00Z'),
+      status: 'open',
+      tags: ['production', 'component_pick', 'WH51', 'line_starvation'],
+    });
+  }
+
+  // ── EX-016 ── WH51 Quality Order Backlog ───────────────────────────────
+  // Source: WarehouseWorkHeaders — multiple QualityOrder + QualityItemSampling in WH51
+  const wh51QualWork = workHeaders.filter(
+    w => w.warehouseId === '51' && (w.type === 'QualityOrder' || w.type === 'QualityItemSampling')
+  );
+  if (wh51QualWork.length > 1) {
+    const qualOrders = wh51QualWork.filter(w => w.type === 'QualityOrder');
+    const qualSampling = wh51QualWork.filter(w => w.type === 'QualityItemSampling');
+    exceptions.push({
+      id: 'EX-016',
+      title: `Quality work backlog — ${wh51QualWork.length} open quality tasks in WH51 (${qualOrders.length} orders + ${qualSampling.length} sampling)`,
+      description:
+        `WH51 has ${wh51QualWork.length} open quality-related work orders: ` +
+        `${qualOrders.length} QualityOrder(s) (orders ${qualOrders.map(w => w.orderNumber).join(', ')}) and ` +
+        `${qualSampling.length} QualityItemSampling task(s). All are unstarted. Inventory is held pending QC sign-off.`,
+      severity: 'high',
+      warehouseId: '51',
+      processArea: 'quality',
+      category: 'quality_hold',
+      agingHours: hoursAgo(new Date('2026-04-19T08:00:00Z')),
+      impact:
+        'Multiple batches of inventory remain quarantined. Cannot be consumed for production or shipped until quality work is closed. ' +
+        'Production supply risk if any of these are components.',
+      likelyCause:
+        'QC team under-resourced relative to current throughput. Quality check backlog building across multiple receipts and production orders.',
+      suggestedAction:
+        `Prioritise QC team to close ${wh51QualWork.length} open quality tasks in WH51. ` +
+        'Escalate to quality manager if any items are production-critical. ' +
+        `Review orders: ${wh51QualWork.map(w => w.orderNumber).filter(Boolean).join(', ')}`,
+      dataSource: 'real',
+      dataNote:
+        `D365FO WarehouseWorkHeaders: ${wh51QualWork.length} open quality work orders in WH51 — ` +
+        `${qualOrders.length} QualityOrder + ${qualSampling.length} QualityItemSampling, all ProcessingStartDateTime=1900-01-01.`,
+      createdAt: new Date('2026-04-19T08:00:00Z'),
+      status: 'open',
+      tags: ['quality', 'backlog', 'WH51', 'quarantine', 'multiple_orders'],
+    });
+  }
+
+  // ── EX-017 ── WH24 L0100 Speaker Driver Stockout ───────────────────────
+  // Source: WarehousesOnHandV2 — L0100, WH24, Available=0
+  const l0100 = onHand.find(i => i.itemNumber === 'L0100' && i.warehouseId === '24');
+  if (l0100 && l0100.available === 0 && l0100.onHand > 0) {
+    exceptions.push({
+      id: 'EX-017',
+      title: `NEW stockout: ${l0100.productName} (${l0100.itemNumber}) — 0 available (WH24)`,
+      description:
+        `${l0100.productName} in WH24 has all ${l0100.onHand} unit(s) fully reserved. ` +
+        'Zero available for new pick lines. This is a new stockout detected in the current snapshot.',
+      severity: 'high',
+      warehouseId: '24',
+      processArea: 'production',
+      category: 'stockout',
+      agingHours: hoursAgo(new Date('2026-04-22T00:00:00Z')),
+      impact:
+        'Any production work order in WH24 requiring L0100 Speaker driver cannot pick. ' +
+        'BOM-dependent production lines will short-pick or fail.',
+      likelyCause:
+        'Component fully consumed or over-reserved since last snapshot. No replenishment transfer visible from WH51 stock (1,425 available).',
+      suggestedAction:
+        'Create a transfer order or replenishment work from WH51 (1,425 available) to WH24. ' +
+        'Review active production orders requiring L0100 for prioritisation.',
+      itemNumber: 'L0100',
+      itemName: l0100.productName,
+      dataSource: 'real',
+      dataNote:
+        `D365FO WarehousesOnHandV2: ItemNumber=L0100, InventoryWarehouseId=24, ` +
+        `OnHandQuantity=${l0100.onHand}, ReservedOnHandQuantity=${l0100.reserved}, AvailableOnHandQuantity=0. ` +
+        'NEW since previous snapshot (2026-04-17).',
+      createdAt: new Date('2026-04-22T00:00:00Z'),
+      status: 'open',
+      tags: ['stockout', 'component', 'production', 'new', 'L0100'],
+    });
+  }
+
+  // ── EX-018 ── WH51 Unstarted ProdPut for P002086 ───────────────────────
+  // Source: WarehouseWorkHeaders — USMF-002117, ProdPut, NOT blocked but open and unstarted
+  const prodPut2086 = workHeaders.find(w => w.workId === 'USMF-002117');
+  if (prodPut2086) {
+    exceptions.push({
+      id: 'EX-018',
+      title: 'Production putaway pending — WH51, P002086 (USMF-002117)',
+      description:
+        'Work USMF-002117 for production order P002086 in WH51 is open and unstarted. ' +
+        'Finished goods cannot be put away to their target storage location.',
+      severity: 'medium',
+      warehouseId: '51',
+      processArea: 'production',
+      category: 'stale_work',
+      agingHours: hoursAgo(new Date('2026-04-21T12:00:00Z')),
+      impact:
+        'Finished goods for P002086 accumulate at production output. ' +
+        'Similar to the blocked putaway on P002087 (EX-001), further production runs may be impacted if output location fills.',
+      likelyCause:
+        'No worker assigned to putaway after production completion. High production throughput creating putaway backlog.',
+      suggestedAction:
+        'Assign a worker to USMF-002117 immediately. Confirm target putaway location has capacity. ' +
+        'Monitor alongside USMF-002118 (P002087, currently blocked) to avoid compounding the putaway backlog.',
+      sourceWorkId: 'USMF-002117',
+      sourceOrderNumber: 'P002086',
+      dataSource: 'real',
+      dataNote:
+        'D365FO WarehouseWorkHeaders: WarehouseWorkId=USMF-002117, Type=ProdPut, Status=Open, ' +
+        'IsWarehouseWorkBlocked=No, ProcessingStartDateTime=1900-01-01.',
+      createdAt: new Date('2026-04-21T12:00:00Z'),
+      status: 'open',
+      tags: ['production', 'putaway', 'WH51', 'P002086'],
+    });
+  }
+
   return exceptions;
 }
+

@@ -71,12 +71,17 @@ interface ExceptionStore {
   filters: ExceptionFilters;
   kpiFilter: KpiFilterId | null;
   selectedExceptionId: string | null;
+  isRefreshing: boolean;
+  refreshStep: string | null;
+  refreshError: string | null;
+  lastRefreshed: Date | null;
   setFilters: (filters: Partial<ExceptionFilters>) => void;
   resetFilters: () => void;
   setKpiFilter: (id: KpiFilterId | null) => void;
   selectException: (id: string | null) => void;
   filteredExceptions: () => WarehouseException[];
   metrics: () => KpiMetrics;
+  refreshSnapshot: () => void;
 }
 
 export const useExceptionStore = create<ExceptionStore>((set, get) => ({
@@ -84,6 +89,10 @@ export const useExceptionStore = create<ExceptionStore>((set, get) => ({
   filters: DEFAULT_FILTERS,
   kpiFilter: null,
   selectedExceptionId: null,
+  isRefreshing: false,
+  refreshStep: null,
+  refreshError: null,
+  lastRefreshed: null,
 
   setFilters: (partial) =>
     set((state) => ({ filters: { ...state.filters, ...partial } })),
@@ -141,5 +150,14 @@ export const useExceptionStore = create<ExceptionStore>((set, get) => ({
       stockoutCount: stockouts,
       realDataCount: realData,
     };
+  },
+
+  refreshSnapshot: () => {
+    set({ isRefreshing: true, refreshStep: 'Re-deriving exceptions…', refreshError: null });
+    // setTimeout lets React flush the loading state before the synchronous derive
+    setTimeout(() => {
+      const exceptions = deriveExceptions();
+      set({ exceptions, isRefreshing: false, refreshStep: null, lastRefreshed: new Date() });
+    }, 300);
   },
 }));
